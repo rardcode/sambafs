@@ -60,6 +60,10 @@ services:
 ```
 
 ## Changelog
+v1.0.1 - 14.08.2025
+- Alpine v. 3.22.1
+- samba v. 4.21.4-r4
+
 v1.0.0 - 10.07.2025
 - Alpine v. 3.22.0
 - samba v. 4.21.4-r4
