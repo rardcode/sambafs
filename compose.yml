@@ -1,0 +1,20 @@
+
+services:
+  sambafs:
+    container_name: sambafs
+    image: rardcode/sambafs
+    restart: unless-stopped
+    ports:
+      - 137:137/udp
+      - 138:138/udp
+      - 139:139
+      - 445:445
+    environment:
+      - SHARE_PUBLIC=N # Y|N
+    #  - NETBIOS_NAME=DOMAINBIOS
+    #  - SERVER_STRING=DOMAINSTRING
+    #  - WORKGROUP_NAME=DOMAINGROUP
+    volumes:
+    - /srv/samba:/srv/samba
+    - ./conf/user.list:/var/samba/conf/user.list
+    #command: '-u "user1:user1pwd:rw:user1-share"'

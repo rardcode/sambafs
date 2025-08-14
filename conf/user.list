@@ -1,0 +1,6 @@
+## inserire utenti, folder e permessi nel seguente formato:
+##
+## utente:password:permessi:share
+
+user1:user1pwd:rw:user1-share
+user2:user2pwd:rw:user2-share
