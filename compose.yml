@@ -11,7 +11,7 @@ services:
       - 445:445
     #environment:
     #  - USER1=user|pass
+    #  - GROUP1=group|user1|user2
     volumes:
     #- /srv/samba:/srv/samba
     - ./data:/data
-    #command: '-u user1:user1pwd'
