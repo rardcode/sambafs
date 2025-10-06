@@ -89,5 +89,4 @@ for i in $(ls /home); do echo 'export PS1="\[\e[35m\][\[\e[33m\]\u\[\e[36m\]@\[\
 }
 _bashrc
 
-nmbd -D
-smbd -F -d 2 --no-process-group --configfile=/data/smb.conf < /dev/null
+smbd -F -d 2 --configfile=/data/smb.conf

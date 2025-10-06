@@ -50,6 +50,9 @@ services:
 ```
 
 ## Changelog
+v.2.0.2 - 06.10.2025
+- Fixed smbd launch command
+
 v.2.0.1 - 06.10.2025
 - Added support for groups
 
