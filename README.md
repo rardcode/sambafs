@@ -15,7 +15,7 @@ cd /opt/sambafs
 ```
 Launch docker the first time: a simple smb.conf will be created in data/ dir.\
 Docker is ready for a public samba share in /srv/samba/public.\
-Edit data/smb.conf with your desidered shares and compose.yml with user to add (you can pass user with `-u` option in docker run).
+Edit data/smb.conf with your desidered shares and compose.yml with group/user to add.
 
 
 ## How to run
@@ -24,10 +24,10 @@ You can run it with docker run:
 ```
 docker run -d -p 139:139 -p 445:445 \
  -e USER1=username|password \ # optional
+ -e GROUP1=groupname|user1|user2 \ # optional
  -v "/srv/samba:/srv/samba" \
  -v "./data:/data" \
  rardcode/sambafs \
- -u user1:user1pwd \ # optional if you use user.list file
 ```
 ### With docker-compose file
 ```
@@ -42,14 +42,17 @@ services:
       - 139:139
       - 445:445
     #environment:
-    #  - USER1=user|pass
+    #  - USER1=username|pass
+    #  - GROUP1=groupname|user1|user2
     volumes:
     #- /srv/samba:/srv/samba
     - ./data:/data
-    #command: '-u user1:user1pwd'
 ```
 
 ## Changelog
+v.2.0.1 - 06.10.2025
+- Added support for groups
+
 v.2.0.0 - 06.10.2025
 - Significant build logic rewrite
 

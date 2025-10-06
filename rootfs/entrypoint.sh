@@ -24,40 +24,50 @@ fi
 [ ! -d /srv/samba/public ] && mkdir -p /srv/samba/public && chmod 0777 /srv/samba/public && chown -R nobody:nogroup /srv/samba/public
 
 [ -e /tmp/users.db ] && rm /tmp/users.db
-
-## get user and share passed trought cmdline
-while getopts "u:" opt; do
- case $opt in
-
-        u)
-        echo $OPTARG >> /tmp/users.db
-        ;;
-
- esac
-done
+[ -e /tmp/groups.db ] && rm /tmp/groups.db
 
 env | grep '^USER' | while read -r value; do
  echo "$value" | cut -d = -f2 >> /tmp/users.db
 done
 
+env | grep '^GROUP' | while read -r value; do
+ echo "$value" | cut -d = -f2 >> /tmp/groups.db
+done
+
 if [ -e /tmp/users.db ]; then
 cat /tmp/users.db | while read LINE; do
- utente=$(echo $LINE | cut -d \| -f1)
+ newuser=$(echo $LINE | cut -d \| -f1)
  pass=$(echo $LINE | cut -d \| -f2)
 
  # make user unix + pass
- if ! id "$utente" >/dev/null 2>&1; then
-  adduser -D "$utente"
-  echo "$utente:$pass" | chpasswd
+ if ! id "$newuser" >/dev/null 2>&1; then
+  adduser -D "$newuser"
+  echo "$newuser:$pass" | chpasswd
  fi
 
  # make user samba + pass
- if ! pdbedit -L -u "$utente" >/dev/null 2>&1; then 
-  echo -e "$pass\n$pass" | smbpasswd -a -s "$utente"
-  smbpasswd -e "$utente"
+ if ! pdbedit -L -u "$newuser" >/dev/null 2>&1; then
+  echo -e "$pass\n$pass" | smbpasswd -a -s "$newuser"
+  smbpasswd -e "$newuser"
  fi
 
 done
+fi
+
+if [ -e /tmp/groups.db ]; then
+ cat /tmp/groups.db | while read LINE; do
+ IFS='|' read -r -a parts <<< "$LINE"
+ groupname="${parts[0]}"
+ groupusers=("${parts[@]:1}")
+
+ getent group "$groupname" > /dev/null || addgroup "$groupname"
+
+ for unixuser in "${groupusers[@]}"; do
+  id "$unixuser" &>/dev/null && usermod -a -G "$groupname" "$unixuser"
+ done
+
+ net groupmap list | grep -q "($groupname)" || net groupmap add ntgroup="$groupname" unixgroup="$groupname" type=domain
+ done
 fi
 
 function custom_bashrc {
