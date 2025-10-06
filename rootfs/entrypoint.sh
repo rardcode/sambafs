@@ -1,89 +1,83 @@
 #!/bin/bash
 set -x
 
-[ ! -e /etc/samba/smb.conf-dist ] && mv /etc/samba/smb.conf /etc/samba/smb.conf-dist
+[ ! -d /data ] && mkdir /data
 
+if [ ! -e /data/smb.conf ]; then
 echo "
 [global]
-netbios name  = $NETBIOS_NAME
-server string = $SERVER_STRING
-workgroup     = $WORKGROUP_NAME
+netbios name  = NETBIOS_NAME
+server string = SERVER_STRING
+workgroup     = WORKGROUP_NAME
 security      = user
-map to guest  = bad user"  > /etc/samba/smb.conf
+map to guest  = bad user
 
-create_share_user () {
-echo -e "\n[$share]"
-echo "  comment = share per utente $utente"
-echo "  path = /srv/samba/$share"
-echo "  writeable = yes"
-echo "  valid users = $utente"
-}
-
-create_share_public () {
-echo -e "\n[public]"
-echo "  comment = default public share folder"
-echo "  path = /srv/samba/public"
-echo "  writeable = yes"
-echo "  guest ok = yes"
-echo "  create mask  = 0666"
-echo "  directory mask = 2777"
-}
-
-if [ $SHARE_PUBLIC = Y ]; then
-mkdir -p /srv/samba/public
-chmod 2777 /srv/samba/public
-create_share_public >> /etc/samba/smb.conf
+[public]
+comment = default public share folder
+path = /srv/samba/public
+writeable = yes
+guest ok = yes
+create mask  = 0666
+directory mask = 2777" > /data/smb.conf
 fi
 
-TMP_USER_DB=$(mktemp)
-cat /var/samba/conf/user.list | grep -Ev '^#|^$' > $TMP_USER_DB
+[ ! -d /srv/samba/public ] && mkdir -p /srv/samba/public && chmod 0777 /srv/samba/public && chown -R nobody:nogroup /srv/samba/public
+
+[ -e /tmp/users.db ] && rm /tmp/users.db
 
 ## get user and share passed trought cmdline
 while getopts "u:" opt; do
  case $opt in
 
         u)
-        echo $OPTARG >> $TMP_USER_DB
+        echo $OPTARG >> /tmp/users.db
         ;;
 
  esac
 done
 
-
-cat $TMP_USER_DB | while read LINE; do
-    utente=$(echo $LINE | cut -d: -f1)
-    pass=$(echo $LINE | cut -d: -f2)
-    perm=$(echo $LINE | cut -d: -f3)
-    share=$(echo $LINE | cut -d: -f4)
-
-    ## creazione utente unix + pass
-    adduser -D $utente
-    addgroup $utente
-    echo $utente:$pass | chpasswd
-    ## creazione utente samba + pass
-    echo -e "$pass\n$pass" | smbpasswd -a -s $utente
-    smbpasswd -e $utente
-    ## creazione share + permessi
-    [ ! -e /srv/samba/$share ] && mkdir -p /srv/samba/$share
-    chown -R $utente:$utente /srv/samba/$share
-    chmod u="$perm"x,g=,o= /srv/samba/$share
-    ## aggiunta share in smb.conf
-    create_share_user >> /etc/samba/smb.conf
+env | grep '^USER' | while read -r value; do
+ echo "$value" | cut -d = -f2 >> /tmp/users.db
 done
 
-setbashrc () {
-    echo '
-    export PS1="\[\e[01;31m\]\u\[\e[01;32m\]\[\e[00m\]@\[\e[38;5;208m\]\h\[\e[00m\]:\[\e[38;5;111m\]\w\[\e[00m\]\$"
-    alias ll="ls -l"
-    alias ls="ls --color=auto"
-    alias dir="dir --color=auto"
-    alias vdir="vdir --color=auto"
-    alias grep="grep --color=auto"
-    alias fgrep="fgrep --color=auto"
-    alias egrep="egrep --color=auto"
-    '
+if [ -e /tmp/users.db ]; then
+cat /tmp/users.db | while read LINE; do
+ utente=$(echo $LINE | cut -d \| -f1)
+ pass=$(echo $LINE | cut -d \| -f2)
+
+ # make user unix + pass
+ if ! id "$utente" >/dev/null 2>&1; then
+  adduser -D "$utente"
+  echo "$utente:$pass" | chpasswd
+ fi
+
+ # make user samba + pass
+ if ! pdbedit -L -u "$utente" >/dev/null 2>&1; then 
+  echo -e "$pass\n$pass" | smbpasswd -a -s "$utente"
+  smbpasswd -e "$utente"
+ fi
+
+done
+fi
+
+function custom_bashrc {
+echo '
+export LS_OPTIONS="--color=auto"
+alias "ls=ls $LS_OPTIONS"
+alias "ll=ls $LS_OPTIONS -la"
+alias "l=ls $LS_OPTIONS -lA"
+'
 }
-setbashrc > /etc/profile.d/local.sh
+
+function _bashrc {
+echo "-----------------------------------------"
+echo " .bashrc file setup..."
+echo "-----------------------------------------"
+custom_bashrc | tee /root/.bashrc
+echo 'export PS1="\[\e[35m\][\[\e[31m\]\u\[\e[36m\]@\[\e[32m\]\h\[\e[90m\] \w\[\e[35m\]]\[\e[0m\]# "' >> /root/.bashrc
+for i in $(ls /home); do echo 'export PS1="\[\e[35m\][\[\e[33m\]\u\[\e[36m\]@\[\e[32m\]\h\[\e[90m\] \w\[\e[35m\]]\[\e[0m\]$ "' >> /home/${i}/.bashrc; done
+}
+_bashrc
 
 nmbd -D
-smbd -F --no-process-group  < /dev/null
+smbd -F -d 2 --no-process-group --configfile=/data/smb.conf < /dev/null

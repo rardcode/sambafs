@@ -22,11 +22,6 @@ RUN set -xe && \
   apk add --upgrade samba-common-tools && \
   apk add --upgrade ${sambaV}
 
-ENV NETBIOS_NAME=NETBIOS_TMP
-ENV SERVER_STRING=STRING_TMP
-ENV WORKGROUP_NAME=WORKGROUP_TMP
-ENV SHARE_PUBLIC=N
-
 ADD rootfs /
 
 ENTRYPOINT ["/entrypoint.sh"]
