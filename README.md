@@ -23,7 +23,7 @@ Edit data/smb.conf with your desidered shares and compose.yml with group/user to
 You can run it with docker run:
 ```
 docker run -d -p 139:139 -p 445:445 \
- -e USER1=username|password \ # optional
+ -e USER1=userID|username|password \ # optional
  -e GROUP1=groupname|user1|user2 \ # optional
  -v "/srv/samba:/srv/samba" \
  -v "./data:/data" \
@@ -42,7 +42,7 @@ services:
       - 139:139
       - 445:445
     #environment:
-    #  - USER1=username|pass
+    #  - USER1=userID|username|pass
     #  - GROUP1=groupname|user1|user2
     volumes:
     #- /srv/samba:/srv/samba
@@ -50,6 +50,9 @@ services:
 ```
 
 ## Changelog
+v.2.0.3 - 08.10.2025
+- Add userID in compose for assign correct docker user ID
+
 v.2.0.2 - 06.10.2025
 - Fixed smbd launch command
 

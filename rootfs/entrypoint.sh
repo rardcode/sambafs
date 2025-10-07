@@ -36,12 +36,13 @@ done
 
 if [ -e /tmp/users.db ]; then
 cat /tmp/users.db | while read LINE; do
- newuser=$(echo $LINE | cut -d \| -f1)
- pass=$(echo $LINE | cut -d \| -f2)
+ userid=$(echo $LINE | cut -d \| -f1)
+ newuser=$(echo $LINE | cut -d \| -f2)
+ pass=$(echo $LINE | cut -d \| -f3)
 
  # make user unix + pass
  if ! id "$newuser" >/dev/null 2>&1; then
-  adduser -D "$newuser"
+  adduser --uid $userid -D "$newuser"
   echo "$newuser:$pass" | chpasswd
  fi
 
