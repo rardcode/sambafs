@@ -50,6 +50,9 @@ services:
 ```
 
 ## Changelog
+v.2.0.4 - 09.10.2025
+- Alpine v. 3.22.2
+
 v.2.0.3 - 08.10.2025
 - Add userID in compose for assign correct docker user ID
 
